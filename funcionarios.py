@@ -42,7 +42,6 @@ def atualizar_funcionario(conn, id_funcionario):
 
   print("\nFuncionário atualizado com sucesso.")
 
-
 def deletar_funcionario(conn, id_funcionario):
   # Verificar se o funcionário existe antes de deletar
   cursor = conn.cursor()
@@ -65,6 +64,20 @@ def deletar_funcionario(conn, id_funcionario):
 
   cursor.close()
 
+def deletar_funcionarios_empresa(conn, id_empresa):
+  # Verificar se o funcionário existe antes de deletar
+  cursor = conn.cursor()
+  cursor.execute("SELECT * FROM Funcionarios WHERE ID_Empresa=%s", (id_empresa, ))
+  funcionarios = cursor.fetchall()
+
+  if funcionarios:
+    cursor.execute("DELETE FROM Funcionarios WHERE ID_Empresa=%s", (id_empresa, ))
+    conn.commit()
+    print("\nFuncionários deletados com sucesso.")
+  else:
+    print("\nNenhum funcionário encontrado para deletar.")
+
+  cursor.close()
 
 def menu_funcionarios_empresa(conn, empresa, id_empresa):
   while True:

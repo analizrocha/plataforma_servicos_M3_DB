@@ -1,19 +1,30 @@
 from servicos import listar_servicos
 
-def listar_servicos_empresa(conn, id_empresa):
+def listar_servicos_empresa(conn, empresa, id_empresa):
   cursor = conn.cursor()
-  cursor.execute("SELECT se.ID, e.Nome as NomeEmpresa, s.Nome as NomeServico, se.Valor FROM Servicos_empresa se JOIN Empresa e ON se.ID_Empresa = e.ID JOIN Servicos s ON se.ID_Servico = s.ID WHERE e.id = %s", (id_empresa, ))
+  cursor.execute("SELECT se.ID, s.Nome as NomeServico, se.Valor FROM Servicos_empresa se JOIN Empresa e ON se.ID_Empresa = e.ID JOIN Servicos s ON se.ID_Servico = s.ID WHERE e.id = %s", (id_empresa, ))
   servicos_empresa = cursor.fetchall()
   cursor.close()
 
   if servicos_empresa:
-      print("\nLista de Serviços Vinculados às Empresas:")
+      print(f"\nLista de Serviços Vinculados à Empresa '{empresa[1]}':")
       for se in servicos_empresa:
-          print(f"{se[0]}. Empresa: {se[1]}, Serviço: {se[2]}, Valor: {se[3]}")
+          print(f"{se[0]}. Serviço: {se[2]}, Valor: {se[3]}")
       return servicos_empresa
   else:
       print("\nNenhum serviço vinculado à empresa.")
       return None
+  
+def pegar_servico_empresa_pelo_id(conn, id_servico_empresa):
+  cursor = conn.cursor()
+  cursor.execute('SELECT * FROM Servicos_empresa WHERE ID = %s', (id_servico_empresa,))
+  servico_empresa = cursor.fetchone()
+  cursor.close()
+
+  if servico_empresa:
+    return servico_empresa
+  else:
+     return None
 
 def criar_servico_empresa(conn, id_empresa, id_servico, valor):
   cursor = conn.cursor()
@@ -28,10 +39,7 @@ def criar_servico_empresa(conn, id_empresa, id_servico, valor):
   print("\nServiço vinculado à empresa criado com sucesso.")
 
 def ler_servico_empresa(conn, id_servico_empresa):
-  cursor = conn.cursor()
-  cursor.execute('SELECT * FROM Servicos_empresa WHERE ID = %s', (id_servico_empresa,))
-  servico_empresa = cursor.fetchone()
-  cursor.close()
+  servico_empresa = pegar_servico_empresa_pelo_id(conn, id_servico_empresa)
   
   if servico_empresa:
       print("\nDetalhes do Serviço Vinculado à Empresa:")
@@ -55,23 +63,37 @@ def atualizar_servico_empresa(conn, id_servico_empresa):
   print("\nServiço vinculado à empresa atualizado com sucesso.")
 
 def deletar_servico_empresa(conn, id_servico_empresa):
-  # Verificar se o serviço vinculado à empresa existe antes de deletar
-  cursor = conn.cursor()
-  cursor.execute("SELECT * FROM Servicos_empresa WHERE ID=%s", (id_servico_empresa,))
-  servico_empresa = cursor.fetchone()
-  cursor.close()
+  servico_empresa = pegar_servico_empresa_pelo_id(conn, id_servico_empresa)
   
   if servico_empresa:
     confirmacao = input(f"Tem certeza que deseja deletar o serviço vinculado à empresa ID {id_servico_empresa}? (S/N): ")
 
     if confirmacao.lower() == 's':
+        cursor = conn.cursor()
         cursor.execute("DELETE FROM Servicos_empresa WHERE ID=%s", (id_servico_empresa,))
         conn.commit()
+        cursor.close()
+
         print("\nServiço vinculado à empresa deletado com sucesso.")
     else:
         print("\nOperação de exclusão cancelada.")
   else:
       print("\nServiço vinculado à empresa não encontrado.")
+
+def deletar_servicos_empresa(conn, id_empresa):
+  cursor = conn.cursor()
+  cursor.execute('SELECT * FROM Servicos_empresa WHERE ID_Empresa = %s', (id_empresa,))
+  servicos_empresa = cursor.fetchall()
+
+  if servicos_empresa:
+    cursor.execute("DELETE FROM Servicos_empresa WHERE ID_Empresa=%s", (id_empresa,))
+    conn.commit()
+    
+    print("\nServiços vinculados à empresa deletados com sucesso.")
+  else:
+    print("\nNenhum serviço vinculado à empresa para deletar.")
+
+  cursor.close()
 
 def menu_servicos_empresa(conn, empresa, id_empresa):
   while True:
@@ -83,7 +105,7 @@ def menu_servicos_empresa(conn, empresa, id_empresa):
     escolha_servicos = input("Escolha a opção: ")
 
     if escolha_servicos == '1':
-      listar_servicos_empresa(conn, id_empresa)
+      listar_servicos_empresa(conn, empresa, id_empresa)
 
     elif escolha_servicos == '2':
       servicos = listar_servicos(conn)
@@ -97,7 +119,7 @@ def menu_servicos_empresa(conn, empresa, id_empresa):
          print("Cadastre um serviço primeiro para então vinculá-lo à empresa.")
 
     elif escolha_servicos == '3':
-      servicos = listar_servicos_empresa(conn, id_empresa)
+      servicos = listar_servicos_empresa(conn, empresa, id_empresa)
 
       if servicos:
         id_servico_empresa = input("\nDigite o ID do Serviço da Empresa que deseja remover: ")

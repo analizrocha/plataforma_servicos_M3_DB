@@ -1,7 +1,6 @@
-from funcionarios import menu_funcionarios_empresa
-from servicos_empresa import menu_servicos_empresa
+from funcionarios import menu_funcionarios_empresa, deletar_funcionarios_empresa
+from servicos_empresa import menu_servicos_empresa, deletar_servicos_empresa
 from banco import conectar
-
 
 def listar_empresas(conn):
   cursor = conn.cursor()
@@ -18,12 +17,19 @@ def listar_empresas(conn):
     print("\nNenhuma empresa cadastrada.")
     return None
 
-
-def ler_empresa(conn, id_empresa):
+def pegar_empresa_por_id(conn, id_empresa):
   cursor = conn.cursor()
   cursor.execute('SELECT * FROM Empresa WHERE ID = %s', (id_empresa, ))
   empresa = cursor.fetchone()
   cursor.close()
+
+  if empresa:
+    return empresa
+  else:
+    return None
+
+def ler_empresa(conn, id_empresa):
+  empresa = pegar_empresa_por_id(conn, id_empresa)
 
   if empresa:
     print("\nDetalhes da Empresa:")
@@ -35,7 +41,6 @@ def ler_empresa(conn, id_empresa):
 
   else:
     print("\nEmpresa não encontrada.")
-
 
 def criar_empresa(conn, nome, cnpj, email, endereco, senha):
   cursor = conn.cursor()
@@ -68,33 +73,30 @@ def atualizar_empresa(conn, id_empresa):
   cursor.close()
   print("\nEmpresa atualizada com sucesso.")
 
-
 def deletar_empresa(conn, id_empresa):
-  cursor = conn.cursor()
-  # Verificar se a empresa existe antes de deletar
-  cursor.execute("SELECT * FROM Empresa WHERE ID=%s", (id_empresa, ))
-  empresa = cursor.fetchone()
+  empresa = pegar_empresa_por_id(conn, id_empresa)
 
   if empresa:
     confirmacao = input(
-        f"Tem certeza que deseja deletar a empresa '{empresa[1]}'? (S/N): ")
+        f"Os funcionários e serviços da empresa serão deletados também. Tem certeza que deseja deletar a empresa '{empresa[1]}'? (S/N): ")
 
     if confirmacao.lower() == 's':
+      deletar_funcionarios_empresa(conn, id_empresa)
+      deletar_servicos_empresa(conn, id_empresa)
+
+      cursor = conn.cursor()
       cursor.execute("DELETE FROM Empresa WHERE ID=%s", (id_empresa, ))
       conn.commit()
       cursor.close()
+
       print("\nEmpresa deletada com sucesso.")
     else:
       print("\nOperação de exclusão cancelada.")
   else:
     print("\nEmpresa não encontrada.")
-    cursor.close()
-
 
 def gerenciar_empresa(conn, id_empresa):
-  cursor = conn.cursor()
-  cursor.execute("SELECT * FROM Empresa WHERE ID=%s", (id_empresa, ))
-  empresa = cursor.fetchone()
+  empresa = pegar_empresa_por_id(conn, id_empresa)
 
   while True:
     print(f"\n------ Gerenciar Empresa '{empresa[1]}' ------")
@@ -114,11 +116,9 @@ def gerenciar_empresa(conn, id_empresa):
       menu_funcionarios_empresa(conn, empresa, id_empresa)
 
     elif escolha_empresa == '0':
-      cursor.close()
       break
     else:
       print("\nOpção inválida. Tente novamente.")
-
 
 def menu_empresas(conn):
   while True:
