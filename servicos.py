@@ -1,5 +1,4 @@
 def listar_servicos(conn):
-
   cursor = conn.cursor()
   cursor.execute("SELECT ID, Nome, Descricao FROM Servicos")
   servicos = cursor.fetchall()
@@ -14,6 +13,16 @@ def listar_servicos(conn):
     print("\nNenhum serviço cadastrado.")
     return None
 
+def pegar_servico_pelo_id(conn, id_servico):
+  cursor = conn.cursor()
+  cursor.execute('SELECT * FROM Servicos WHERE ID = %s', (id_servico, ))
+  servico = cursor.fetchone()
+  cursor.close()
+
+  if servico:
+    return servico
+  else:
+    return None
 
 def criar_servico(conn, nome, descricao):
   cursor = conn.cursor()
@@ -27,12 +36,8 @@ def criar_servico(conn, nome, descricao):
 
   print("\nServiço criado com sucesso.")
 
-
 def ler_servico(conn, id_servico):
-  cursor = conn.cursor()
-  cursor.execute('SELECT * FROM Servicos WHERE ID = %s', (id_servico, ))
-  servico = cursor.fetchone()
-  cursor.close()
+  servico = pegar_servico_pelo_id(conn, id_servico)
 
   if servico:
     print("\nDetalhes do Serviço:")
@@ -60,10 +65,7 @@ def atualizar_servico(conn, id_servico):
 
 
 def deletar_servico(conn, id_servico):
-  # Verificar se o serviço existe antes de deletar
-  cursor = conn.cursor()
-  cursor.execute("SELECT * FROM Servicos WHERE ID=%s", (id_servico, ))
-  servico = cursor.fetchone()
+  servico = pegar_servico_pelo_id(conn, id_servico)
 
   if servico:
     confirmacao = input(
@@ -71,6 +73,7 @@ def deletar_servico(conn, id_servico):
     )
 
     if confirmacao.lower() == 's':
+      cursor = conn.cursor()
       cursor.execute("DELETE FROM Servicos WHERE ID=%s", (id_servico, ))
 
       # Deletar todas as entradas relacionadas na tabela Servicos_empresa
@@ -95,7 +98,6 @@ def menu_servicos(conn):
     print("3. Atualizar Serviço")
     print("4. Deletar Serviço")
     print("0. Voltar ao Menu Inicial")
-
     escolha_servico = input("Escolha a opção: ")
 
     if escolha_servico == '1':  # criar
